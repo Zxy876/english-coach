@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest run --config vitest.config.ts",
     "test:e2e": "playwright test",
-    "nce:ingest": "tsx scripts/nce-ingest.ts"
+    "nce:ingest": "tsx scripts/nce-ingest.ts",
+    "skeleton:extract": "tsx scripts/extract-skeletons.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

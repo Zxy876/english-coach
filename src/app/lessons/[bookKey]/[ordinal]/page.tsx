@@ -43,6 +43,14 @@ export default async function Page(
         <span className="text-[#cccccc]">
           {lesson.book.key} &middot; #{lesson.ordinal}
         </span>
+        <span className="ml-auto">
+          <Link
+            href={`/lessons/${encodeURIComponent(lesson.book.key)}/${lesson.ordinal}/skeleton`}
+            className="hover:text-white"
+          >
+            skeleton &rarr;
+          </Link>
+        </span>
       </nav>
       <NcePlayer
         audioUrl={lesson.audioUrl}

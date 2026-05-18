@@ -121,6 +121,7 @@ model NceLesson {
   fetchedAt DateTime @default(now())
 
   sentences NceSentence[]
+  skeleton  LessonSkeleton?
 
   @@unique([bookKey, ordinal])
   @@index([bookKey])
@@ -137,4 +138,25 @@ model NceSentence {
 
   @@unique([lessonId, ordinal])
   @@index([lessonId])
+}
+
+// ─── R3 · Canonical Skeleton ──────────────────────────────────────────────
+// Opus-extracted narrative skeleton for each NceLesson; serves as the
+// "reference answer" the remix surface (R4) aligns student output against.
+// 1:1 with NceLesson (lessonId is PK). Extraction is idempotent — running
+// `npm run skeleton:extract` again overwrites.
+
+model LessonSkeleton {
+  lessonId         String   @id
+  lesson           NceLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  scene            String                  // one-sentence setting
+  registerLevel    String                  // "casual" | "neutral" | "formal" | "literary"
+  vocabBand        String                  // CEFR: "A1".."C2"
+  characters       Json                    // Character[]
+  timeline         Json                    // TimelineBeat[]
+  plotNodes        Json                    // PlotNode[]
+  sentencePatterns Json                    // SentencePattern[]
+  styleTags        Json                    // string[]
+  model            String                  // gemini model id used
+  extractedAt      DateTime @default(now())
 }
