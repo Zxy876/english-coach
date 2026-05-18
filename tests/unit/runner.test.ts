@@ -55,7 +55,7 @@ describe("runner registry", () => {
   });
 });
 
-describe("englishRemixRunner (placeholder)", () => {
+describe("englishRemixRunner (R4)", () => {
   it("flags empty submissions as not-ok", async () => {
     const r = await englishRemixRunner.evaluate({
       submission: "   ",
@@ -66,7 +66,7 @@ describe("englishRemixRunner (placeholder)", () => {
     expect(r.notes[0]?.severity).toBe("error");
   });
 
-  it("counts sentences for a non-empty submission", async () => {
+  it("falls back to sentence count when no payload is supplied", async () => {
     const r = await englishRemixRunner.evaluate({
       submission: "The plane took off. Mr Brown was nervous!",
       expected: null,
@@ -82,5 +82,50 @@ describe("englishRemixRunner (placeholder)", () => {
       expected: null,
     });
     expect(r.data?.sentenceCount).toBe(2);
+  });
+
+  it("scores required plot node coverage from payload", async () => {
+    const r = await englishRemixRunner.evaluate({
+      submission:
+        "Excuse me, is this your handbag? Yes, thank you. Thanks for finding my bag.",
+      expected: null,
+      payload: {
+        plan: { keptNodes: ["greeting", "thanks"], reusedPatterns: [0] },
+        skeleton: {
+          plotNodes: [
+            { id: "greeting", label: "Excuse greeting", required: true },
+            { id: "thanks", label: "Closing thanks", required: true },
+          ],
+          sentencePatterns: [
+            { template: "Excuse me, is this your {x}?", example: "Excuse me, is this your bag?" },
+          ],
+          vocabBand: "A1",
+        },
+      },
+    });
+    expect(r.ok).toBe(true);
+    expect(r.data?.requiredCoverage).toBe(1);
+    expect(r.data?.reusedHits).toBe(1);
+    expect(r.score).toBeGreaterThanOrEqual(0.9);
+  });
+
+  it("warns when required nodes are absent from the draft", async () => {
+    const r = await englishRemixRunner.evaluate({
+      submission: "I went to the shop. I bought milk.",
+      expected: null,
+      payload: {
+        plan: { keptNodes: ["greeting"], reusedPatterns: [] },
+        skeleton: {
+          plotNodes: [
+            { id: "greeting", label: "Excuse greeting", required: true },
+          ],
+          sentencePatterns: [],
+          vocabBand: "A1",
+        },
+      },
+    });
+    expect(r.data?.requiredCoverage).toBe(0);
+    expect(r.notes.some((n) => n.severity === "warn")).toBe(true);
+    expect(r.score).toBeLessThan(0.5);
   });
 });

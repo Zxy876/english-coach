@@ -122,6 +122,7 @@ model NceLesson {
 
   sentences NceSentence[]
   skeleton  LessonSkeleton?
+  remixExercises RemixExercise[]
 
   @@unique([bookKey, ordinal])
   @@index([bookKey])
@@ -159,4 +160,58 @@ model LessonSkeleton {
   styleTags        Json                    // string[]
   model            String                  // gemini model id used
   extractedAt      DateTime @default(now())
+}
+
+// ─── R4 · Remix exercises + 4-phase sessions ──────────────────────────────
+// A RemixExercise is "task = remix this NceLesson". Authored in R8; for R4
+// the seed script creates one per lesson with skeleton.
+
+model RemixExercise {
+  id           String   @id @default(cuid())
+  lessonId     String
+  lesson       NceLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  title        String
+  instructions String              // markdown blob for the student
+  vocabBandCap String?             // cap CEFR band for remix; null = no cap
+  lockedNodeIds Json               // string[] — plot node ids that MUST appear in plan
+  publishedAt  DateTime?
+  createdAt    DateTime @default(now())
+
+  sessions     RemixSession[]
+
+  @@index([lessonId])
+}
+
+// One student attempt at one RemixExercise. Tracks all 4 phases in JSON
+// columns. State machine: 1 (plan) → 2 (draft) → 3 (align) → 4 (drift) → done.
+model RemixSession {
+  id           String   @id @default(cuid())
+  studentId    String              // free-form for MVP
+  exerciseId   String
+  exercise     RemixExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  currentPhase Int      @default(1)
+  planData     Json?               // { scene, characters, keptNodes[], reusedPatterns[], examinerLog[] }
+  draftData    Json?               // { text, runnerResult, savedAt }
+  alignData    Json?               // alignment JSON from structure-align
+  driftData    Json?               // { drifts[], reflection? }
+  startedAt    DateTime @default(now())
+  lastActiveAt DateTime @default(now())
+  completedAt  DateTime?
+
+  events       RemixEvent[]
+
+  @@index([exerciseId])
+  @@index([studentId])
+  @@index([lastActiveAt])
+}
+
+model RemixEvent {
+  id        String   @id @default(cuid())
+  sessionId String
+  session   RemixSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  kind      String              // "plan_review" | "draft_save" | "align" | "drift" | "phase_transition" | "aux_training"
+  payload   Json
+  createdAt DateTime @default(now())
+
+  @@index([sessionId, createdAt])
 }
