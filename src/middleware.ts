@@ -28,5 +28,8 @@ export const config = {
     "/exercises",
     "/sessions/:path*",
     "/sessions",
+    "/live",
+    "/live/:path*",
+    "/reasoning/:path*",
   ],
 };
