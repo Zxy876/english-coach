@@ -31,5 +31,7 @@ export const config = {
     "/live",
     "/live/:path*",
     "/reasoning/:path*",
+    "/cohort/:path*",
+    "/cohorts",
   ],
 };
