@@ -8,11 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run --config vitest.config.ts",
-    "test:opus": "vitest run --config vitest.opus.config.ts",
     "test:e2e": "playwright test",
-    "capture-fixtures": "tsx scripts/capture-fixtures.ts",
-    "reset-demo": "tsx scripts/reset-demo.ts",
-    "add-math-exercises": "tsx scripts/add-math-exercises.ts"
+    "nce:ingest": "tsx scripts/nce-ingest.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

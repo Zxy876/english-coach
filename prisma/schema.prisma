@@ -91,3 +91,50 @@ model SessionEvent {
   @@index([createdAt])
   @@index([sessionId, createdAt])
 }
+
+// ─── NCE (New Concept English) content layer ──────────────────────────────
+// Mirrors the data hosted at https://nce.mleo.site/<bookKey>/. One row per
+// book / per lesson / per timestamped sentence. The remix surfaces (R3+)
+// reference these rows by id; audio assets stay on the upstream CDN until
+// R2.5's mirror script runs (then `audioUrl` flips to a local path).
+
+model NceBook {
+  key       String   @id      // "NCE1" | "NCE2" | "NCE3" | "NCE4" | "NCE1(85)" | ...
+  title     String
+  bookPath  String            // upstream CDN root, e.g. "https://nce.mleo.site/NCE1"
+  bookLevel String?           // from book.json
+  bookCover String?           // relative path under bookPath
+  fetchedAt DateTime @default(now())
+
+  lessons   NceLesson[]
+}
+
+model NceLesson {
+  id        String   @id @default(cuid())
+  bookKey   String
+  book      NceBook  @relation(fields: [bookKey], references: [key], onDelete: Cascade)
+  ordinal   Int      // 1-based position within the book (matches upstream `units[]` order)
+  title     String
+  filename  String   // upstream basename, e.g. "L001" — combine with bookPath for mp3/lrc URLs
+  audioUrl  String
+  lrcUrl    String
+  fetchedAt DateTime @default(now())
+
+  sentences NceSentence[]
+
+  @@unique([bookKey, ordinal])
+  @@index([bookKey])
+}
+
+model NceSentence {
+  id        String   @id @default(cuid())
+  lessonId  String
+  lesson    NceLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  ordinal   Int      // 1-based, ordered by `startMs`
+  startMs   Int      // start time in ms (already de-offset by the -0.5s the upstream player applies)
+  english   String
+  chinese   String   // may be empty if upstream LRC has no translation column
+
+  @@unique([lessonId, ordinal])
+  @@index([lessonId])
+}
