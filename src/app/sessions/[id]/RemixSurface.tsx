@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AuxDrawer, type AuxEvent, type AuxSentence } from "./AuxDrawer";
 
 type SkeletonNode = {
   id: string;
@@ -74,6 +75,8 @@ export function RemixSurface(props: {
   initialDraft: unknown;
   initialAlign: unknown;
   initialDrift: unknown;
+  sentences: AuxSentence[];
+  initialAuxEvents: AuxEvent[];
 }) {
   const initPlan = (props.initialPlan as { plan?: Plan } | null)?.plan;
   const initDraft = (props.initialDraft as { text?: string } | null)?.text ?? "";
@@ -248,6 +251,14 @@ export function RemixSurface(props: {
           </div>
         </div>
       </details>
+
+      {(phase === 1 || phase === 2) && (
+        <AuxDrawer
+          sessionId={props.sessionId}
+          sentences={props.sentences}
+          initialEvents={props.initialAuxEvents}
+        />
+      )}
 
       {phase === 1 && (
         <section className="space-y-3">

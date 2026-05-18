@@ -13,7 +13,20 @@ export default async function Page(
     where: { id },
     include: {
       exercise: {
-        include: { lesson: { include: { skeleton: true, book: true } } },
+        include: {
+          lesson: {
+            include: {
+              skeleton: true,
+              book: true,
+              sentences: { orderBy: { ordinal: "asc" } },
+            },
+          },
+        },
+      },
+      events: {
+        where: { kind: "aux_training" },
+        orderBy: { createdAt: "desc" },
+        take: 10,
       },
     },
   });
@@ -56,6 +69,17 @@ export default async function Page(
         initialDraft={session.draftData}
         initialAlign={session.alignData}
         initialDrift={session.driftData}
+        sentences={session.exercise.lesson.sentences.map((s) => ({
+          id: s.id,
+          ordinal: s.ordinal,
+          english: s.english,
+          chinese: s.chinese,
+        }))}
+        initialAuxEvents={session.events.map((e) => ({
+          id: e.id,
+          createdAt: e.createdAt.toISOString(),
+          payload: e.payload as Record<string, unknown>,
+        }))}
       />
     </main>
   );

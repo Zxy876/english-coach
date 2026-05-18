@@ -17,6 +17,8 @@
 export const RUNNER_KINDS = [
   "english-remix",
   "english-dictation",
+  "english-shadowing",
+  "english-read-aloud",
 ] as const;
 export type RunnerKind = (typeof RUNNER_KINDS)[number];
 
