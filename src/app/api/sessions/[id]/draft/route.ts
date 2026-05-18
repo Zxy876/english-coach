@@ -1,13 +1,22 @@
-// POST /api/sessions/[id]/draft — save draft text + run english-remix runner.
+// POST /api/sessions/[id]/draft — save draft + run runner + ask Opus
+// to gate the submission (R10 draft-review). The verdict ("pass" or
+// "revise") replaces the old "save & check" semantics: students may
+// only advance to Phase 3 after Opus returns "pass".
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getRunner } from "@/lib/runner";
 import "@/lib/runner"; // ensure side-effect registration
+import { callOpusAndParse } from "@/lib/opus/client";
+import {
+  DRAFT_REVIEW_SYSTEM,
+  DraftReviewSchema,
+  buildDraftReviewUserMessage,
+} from "@/lib/opus/prompts/draft-review";
 import type { RemixDraftData, RemixPlanData } from "@/lib/remix/types";
 
-const BodySchema = z.object({ text: z.string() });
+const BodySchema = z.object({ text: z.string().min(1) });
 
 export async function POST(
   req: Request,
@@ -16,10 +25,7 @@ export async function POST(
   const { id } = await ctx.params;
   const parsed = BodySchema.safeParse(await req.json());
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: "invalid body" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "invalid body" }, { status: 400 });
   }
 
   const session = await prisma.remixSession.findUnique({
@@ -48,6 +54,9 @@ export async function POST(
     return NextResponse.json({ error: "plan missing" }, { status: 409 });
   }
 
+  const previousDraft = session.draftData as RemixDraftData | null;
+  const attemptNumber = (previousDraft?.version ?? 0) + 1;
+
   const runner = getRunner("english-remix");
   const runnerResult = await runner.evaluate({
     submission: parsed.data.text,
@@ -62,10 +71,60 @@ export async function POST(
     },
   });
 
+  const review = await callOpusAndParse({
+    promptName: "draft-review",
+    system: DRAFT_REVIEW_SYSTEM,
+    messages: [
+      {
+        role: "user",
+        content: buildDraftReviewUserMessage({
+          lessonTitle: session.exercise.lesson.title,
+          bookKey: session.exercise.lesson.bookKey,
+          lessonOrdinal: session.exercise.lesson.ordinal,
+          skeleton: {
+            scene: skeleton.scene,
+            registerLevel: skeleton.registerLevel,
+            vocabBand: skeleton.vocabBand,
+            plotNodes: skeleton.plotNodes as unknown as Array<{
+              id: string;
+              label: string;
+              required: boolean;
+              description: string;
+            }>,
+            sentencePatterns: skeleton.sentencePatterns as unknown as Array<{
+              template: string;
+              example: string;
+            }>,
+          },
+          plan,
+          vocabBandCap: session.exercise.vocabBandCap ?? null,
+          draft: parsed.data.text,
+          attemptNumber,
+        }),
+      },
+    ],
+    schema: DraftReviewSchema,
+    maxTokens: 2048,
+  });
+
+  // Server-side gate: trust the model on per-dimension scores but always
+  // re-evaluate the PASS condition ourselves so a stray "verdict: pass"
+  // with low scores cannot accidentally unlock Phase 3.
+  const minScore = Math.min(
+    review.goalScore,
+    review.narrativeScore,
+    review.styleScore,
+  );
+  const passed = minScore >= 4 && review.missingRequired.length === 0;
+  const finalReview = { ...review, verdict: (passed ? "pass" : "revise") as "pass" | "revise" };
+
   const draftData: RemixDraftData = {
     text: parsed.data.text,
     runnerResult,
     savedAt: new Date().toISOString(),
+    review: finalReview,
+    version: attemptNumber,
+    passed,
   };
 
   await prisma.$transaction([
@@ -79,11 +138,24 @@ export async function POST(
     prisma.remixEvent.create({
       data: {
         sessionId: id,
-        kind: "draft_save",
-        payload: { score: runnerResult.score, ok: runnerResult.ok },
+        kind: "draft_review",
+        payload: {
+          version: attemptNumber,
+          verdict: finalReview.verdict,
+          goalScore: review.goalScore,
+          narrativeScore: review.narrativeScore,
+          styleScore: review.styleScore,
+          missingRequired: review.missingRequired,
+          runnerScore: runnerResult.score,
+        },
       },
     }),
   ]);
 
-  return NextResponse.json({ runnerResult });
+  return NextResponse.json({
+    runnerResult,
+    review: finalReview,
+    version: attemptNumber,
+    passed,
+  });
 }

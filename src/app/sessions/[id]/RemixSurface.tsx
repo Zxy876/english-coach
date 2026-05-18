@@ -42,6 +42,24 @@ interface RunnerResult {
   notes: RunnerNote[];
 }
 
+interface ReviewQuestion {
+  dimension: "goal" | "narrative" | "style";
+  nodeId: string | null;
+  question: string;
+  evidence: string | null;
+}
+interface DraftReview {
+  verdict: "pass" | "revise";
+  goalScore: number;
+  narrativeScore: number;
+  styleScore: number;
+  coveredNodes: string[];
+  missingRequired: string[];
+  blockingQuestions: ReviewQuestion[];
+  suggestions: string[];
+  overallNote: string;
+}
+
 interface Alignment {
   nodeId: string;
   status: "hit" | "merged" | "missing" | "extra";
@@ -79,9 +97,18 @@ export function RemixSurface(props: {
   initialAuxEvents: AuxEvent[];
 }) {
   const initPlan = (props.initialPlan as { plan?: Plan } | null)?.plan;
-  const initDraft = (props.initialDraft as { text?: string } | null)?.text ?? "";
-  const initRunner = (props.initialDraft as { runnerResult?: RunnerResult } | null)
-    ?.runnerResult;
+  const initDraftBlob = props.initialDraft as {
+    text?: string;
+    runnerResult?: RunnerResult;
+    review?: DraftReview;
+    version?: number;
+    passed?: boolean;
+  } | null;
+  const initDraft = initDraftBlob?.text ?? "";
+  const initRunner = initDraftBlob?.runnerResult;
+  const initReview = initDraftBlob?.review ?? null;
+  const initVersion = initDraftBlob?.version ?? 0;
+  const initPassed = initDraftBlob?.passed ?? false;
 
   const [phase, setPhase] = useState(props.initialPhase);
 
@@ -103,6 +130,9 @@ export function RemixSurface(props: {
 
   const [draft, setDraft] = useState(initDraft);
   const [runner, setRunner] = useState<RunnerResult | null>(initRunner ?? null);
+  const [review, setReview] = useState<DraftReview | null>(initReview);
+  const [draftVersion, setDraftVersion] = useState(initVersion);
+  const [draftPassed, setDraftPassed] = useState(initPassed);
   const [draftBusy, setDraftBusy] = useState(false);
 
   const [align, setAlign] = useState<AlignResult | null>(
@@ -134,7 +164,7 @@ export function RemixSurface(props: {
     }
   }
 
-  async function saveDraft() {
+  async function submitDraft() {
     setDraftBusy(true);
     try {
       const res = await fetch(`/api/sessions/${props.sessionId}/draft`, {
@@ -143,7 +173,10 @@ export function RemixSurface(props: {
         body: JSON.stringify({ text: draft }),
       });
       const data = await res.json();
-      setRunner(data.runnerResult);
+      if (data.runnerResult) setRunner(data.runnerResult);
+      if (data.review) setReview(data.review);
+      if (typeof data.version === "number") setDraftVersion(data.version);
+      if (typeof data.passed === "boolean") setDraftPassed(data.passed);
     } finally {
       setDraftBusy(false);
     }
@@ -354,37 +387,138 @@ export function RemixSurface(props: {
 
       {phase === 2 && (
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold">Phase 2 · Draft</h2>
+          <h2 className="text-lg font-semibold">
+            Phase 2 · Draft
+            {draftVersion > 0 && (
+              <span className="ml-2 text-xs font-mono text-[#858585]">
+                v{draftVersion}
+                {review && (
+                  <span
+                    className={
+                      "ml-2 px-2 py-0.5 rounded " +
+                      (review.verdict === "pass"
+                        ? "bg-emerald-900 text-emerald-200"
+                        : "bg-amber-900 text-amber-200")
+                    }
+                  >
+                    {review.verdict === "pass" ? "✓ PASS" : "REVISE"}
+                  </span>
+                )}
+              </span>
+            )}
+          </h2>
+          <p className="text-xs text-[#858585]">
+            Write your remix. Submit it for review — Opus will score{" "}
+            <strong>goal</strong> · <strong>narrative</strong> ·{" "}
+            <strong>style</strong> and either pass you or send back
+            counter-questions. Keep revising until all three reach 4/5.
+          </p>
           <textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            rows={10}
+            rows={12}
             className="w-full rounded border border-[#3c3c3c] bg-transparent px-3 py-2 text-sm font-mono"
             placeholder="Write your remix here…"
           />
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <button
-              onClick={saveDraft}
+              onClick={submitDraft}
               disabled={draftBusy || draft.trim().length === 0}
               className="text-xs font-mono px-3 py-1 rounded bg-[#04395e] hover:bg-[#0e639c] text-white disabled:opacity-50"
             >
-              {draftBusy ? "checking…" : "save & check"}
+              {draftBusy
+                ? "reviewing…"
+                : draftVersion === 0
+                ? "submit for review"
+                : `revise & resubmit (v${draftVersion + 1})`}
             </button>
             <button
               onClick={runAlign}
-              disabled={alignBusy || draft.trim().length === 0}
-              className="text-xs font-mono px-3 py-1 rounded border border-[#3c3c3c] hover:bg-[#2d2d2d] disabled:opacity-50"
+              disabled={alignBusy || !draftPassed}
+              title={
+                draftPassed
+                  ? "Advance to Phase 3"
+                  : "Locked — your draft must PASS review first"
+              }
+              className="text-xs font-mono px-3 py-1 rounded border border-[#3c3c3c] hover:bg-[#2d2d2d] disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {alignBusy ? "aligning…" : "submit → Phase 3"}
+              {alignBusy ? "aligning…" : "→ Phase 3"}
             </button>
           </div>
-          {runner && (
-            <div className="rounded border border-[#3c3c3c] p-3 text-xs">
-              <div>
-                score: <strong>{runner.score}</strong> · ok:{" "}
-                {String(runner.ok)}
+
+          {review && (
+            <div
+              className={
+                "rounded border p-3 text-xs space-y-3 " +
+                (review.verdict === "pass"
+                  ? "border-emerald-700 bg-emerald-950/30"
+                  : "border-amber-700 bg-amber-950/20")
+              }
+            >
+              <div className="flex gap-4 font-mono">
+                <span>
+                  goal: <strong>{review.goalScore}</strong>/5
+                </span>
+                <span>
+                  narrative: <strong>{review.narrativeScore}</strong>/5
+                </span>
+                <span>
+                  style: <strong>{review.styleScore}</strong>/5
+                </span>
               </div>
-              <ul className="mt-1 space-y-1">
+              <div>{review.overallNote}</div>
+              {review.missingRequired.length > 0 && (
+                <div className="text-red-400">
+                  Still missing required nodes:{" "}
+                  <code className="font-mono">
+                    {review.missingRequired.join(", ")}
+                  </code>
+                </div>
+              )}
+              {review.blockingQuestions.length > 0 && (
+                <div>
+                  <div className="font-semibold mb-1">
+                    Answer these in your next revision:
+                  </div>
+                  <ul className="space-y-1 pl-4 list-disc">
+                    {review.blockingQuestions.map((q, i) => (
+                      <li key={i}>
+                        <span className="text-[#858585]">[{q.dimension}]</span>{" "}
+                        {q.nodeId && (
+                          <code className="font-mono text-amber-300">
+                            {q.nodeId}{" "}
+                          </code>
+                        )}
+                        {q.question}
+                        {q.evidence && (
+                          <div className="text-[#858585] mt-0.5">
+                            ↳ in your draft: “{q.evidence}”
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {review.suggestions.length > 0 && (
+                <div>
+                  <div className="font-semibold mb-1">Suggestions:</div>
+                  <ul className="space-y-1 pl-4 list-disc">
+                    {review.suggestions.map((s, i) => (
+                      <li key={i}>{s}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+          {runner && (
+            <details className="rounded border border-[#3c3c3c] p-3 text-xs">
+              <summary className="cursor-pointer text-[#858585]">
+                local runner checks · score {runner.score} · ok={String(runner.ok)}
+              </summary>
+              <ul className="mt-2 space-y-1">
                 {runner.notes.map((n, i) => (
                   <li key={i}>
                     <span className="text-[#858585]">[{n.severity}]</span>{" "}
@@ -392,7 +526,7 @@ export function RemixSurface(props: {
                   </li>
                 ))}
               </ul>
-            </div>
+            </details>
           )}
         </section>
       )}

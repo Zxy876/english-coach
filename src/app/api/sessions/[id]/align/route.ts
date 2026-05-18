@@ -30,9 +30,18 @@ export async function POST(
       { status: 409 },
     );
   }
-  const draft = (session.draftData as RemixDraftData | null)?.text;
+  const draftData = session.draftData as RemixDraftData | null;
+  const draft = draftData?.text;
   if (!draft) {
     return NextResponse.json({ error: "draft missing" }, { status: 409 });
+  }
+  // R10: the submission gate must have passed before Phase 3 can run.
+  // Legacy rows (no review/passed field) are grandfathered as passed.
+  if (draftData?.review !== undefined && draftData.passed !== true) {
+    return NextResponse.json(
+      { error: "draft has not passed review yet — revise and resubmit" },
+      { status: 409 },
+    );
   }
 
   const result = await callOpusAndParse({

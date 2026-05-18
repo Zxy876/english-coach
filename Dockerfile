@@ -7,6 +7,10 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma
 
+# Stub DATABASE_URL so `prisma generate` (postinstall) + `next build` are happy.
+# The real value comes from runtime env.
+ENV DATABASE_URL="file:/app/prisma/dev.db"
+
 # Install dependencies
 RUN npm ci
 
@@ -30,6 +34,9 @@ COPY package*.json ./
 # Prisma schema must exist before production install so @prisma/client
 # postinstall can generate the client during npm ci.
 COPY prisma ./prisma
+
+# Same stub for the runtime image's postinstall.
+ENV DATABASE_URL="file:/app/prisma/dev.db"
 
 # Install dependencies including prisma CLI for runtime migrations
 RUN npm ci

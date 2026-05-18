@@ -30,6 +30,12 @@ export interface RemixDraftData {
   text: string;
   runnerResult: unknown;
   savedAt: string;
+  /** Latest review verdict. Undefined for legacy rows submitted before R10. */
+  review?: unknown;
+  /** Monotonic submission counter. 1 = first submit. */
+  version?: number;
+  /** True iff the latest review verdict is "pass". Gate for advancing to Phase 3. */
+  passed?: boolean;
 }
 
 export interface SessionWithCtx extends RemixSession {

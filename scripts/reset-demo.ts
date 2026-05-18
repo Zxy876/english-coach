@@ -190,7 +190,28 @@ async function seedSession(a: SeedArgs) {
       completedAt,
       planData: a.plan as never,
       draftData: a.draftText
-        ? ({ text: a.draftText, savedAt: lastActiveAt.toISOString() } as never)
+        ? ({
+            text: a.draftText,
+            savedAt: lastActiveAt.toISOString(),
+            // Seeded demo drafts are considered passed so demo flows can
+            // advance to Phase 3+ without re-asking Opus.
+            version: 1,
+            passed: a.currentPhase >= 3,
+            review:
+              a.currentPhase >= 3
+                ? {
+                    verdict: "pass",
+                    goalScore: 5,
+                    narrativeScore: 4,
+                    styleScore: 4,
+                    coveredNodes: [],
+                    missingRequired: [],
+                    blockingQuestions: [],
+                    suggestions: [],
+                    overallNote: "(seeded) draft accepted in demo data.",
+                  }
+                : undefined,
+          } as never)
         : undefined,
       alignData: (a.align ?? undefined) as never,
       driftData: (a.drift ?? undefined) as never,
