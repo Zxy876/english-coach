@@ -33,5 +33,7 @@ export const config = {
     "/reasoning/:path*",
     "/cohort/:path*",
     "/cohorts",
+    "/authoring",
+    "/authoring/:path*",
   ],
 };
