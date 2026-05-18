@@ -1,0 +1,23 @@
+# This file used by `gcloud` to determine which files to skip when
+# uploading your application to Google Compute Engine.
+
+node_modules/
+npm-debug.log
+.git
+.gitignore
+.gcloudignore
+README.md
+.env
+.env.local
+.env.*.local
+.vscode
+.idea
+tests/
+scripts/
+.next/
+.prisma/
+dev.db*
+playwright.config.ts
+vitest.config.ts
+vitest.opus.config.ts
+tsconfig.tsbuildinfo

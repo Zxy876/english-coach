@@ -1,0 +1,49 @@
+# Google Cloud App Engine configuration for maieutic
+runtime: nodejs20
+
+env: standard
+
+# 自动扩展配置
+automatic_scaling:
+  min_instances: 1
+  max_instances: 10
+  min_idle_instances: 1
+  max_idle_instances: 3
+  standard_scheduler_settings:
+    max_concurrent_requests: 50
+
+# 环境变量 (生产环境)
+env_variables:
+  NODE_ENV: "production"
+  NEXT_TELEMETRY_DISABLED: "1"
+
+# 健康检查
+health_check:
+  enable_health_check: true
+  check_interval_sec: 30
+  timeout_sec: 4
+  unhealthy_threshold: 2
+  healthy_threshold: 2
+
+# 超时设置
+timeout: "540s"
+
+# 内存分配
+resources:
+  memory_gb: 1
+  cpu: 1
+
+# 处理程序
+handlers:
+  # 静态文件直接从 Cloud Storage 提供（可选）
+  - url: /.*
+    secure: always
+    redirect_http_response_code: 301
+    script: auto
+
+# 构建步骤
+runtime_config:
+  operating_system: "ubuntu22"
+
+# 入口点
+entrypoint: npm start

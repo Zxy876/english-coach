@@ -1,0 +1,93 @@
+// english-coach — Prisma schema
+// Inherited from maieutic; SQLite for MVP, Postgres swap is mechanical.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Exercise {
+  id                   String   @id // slug
+  title                String
+  instructorPromptText String
+  authoredAt           DateTime @default(now())
+  publishedAt          DateTime?
+  targetLanguage       String   @default("python") // "python" | "java" | "math-symbolic" | "math-geometric" | "math-proof" | "math-formal" | "math-theoretical"
+
+  // Final, post-edit
+  specGateDimensions   Json     // SpecDimension[]
+  expectedDivergences  Json     // ExpectedDivergence[]
+  studentLevel         String   // "week_1_2" | "week_3_6" | "week_7_plus"
+  unit                 String   @default("unit_2") // "unit_1" | "unit_2" | "unit_3" | "unit_4"
+
+  // Authoring trace — Opus first-pass output, preserved
+  opusGeneratedDimensions      Json
+  opusGeneratedDivergences     Json
+  opusGeneratedStudentLevel    String
+
+  // Math-specific fields
+  mathProblemType      String?  // "calculable" | "geometric" | "proof" | "theoretical" | "advanced" | "mixed"
+  allowedModes         Json?    // String[] - 允许的表示模式
+  mathFramework        String?  // 数学框架（如 "ZFC", "metric_space", "topological_space"）
+  requiredTheorems     Json?    // String[] - 需要的定理
+  requiredDefinitions  Json?    // String[] - 需要的定义
+
+  sessions             Session[]
+  translations         ExerciseTranslation[]
+}
+
+// Per-language cache of an Exercise's student-visible text. Populated on
+// demand the first time a student in that language loads the exercise,
+// then read from cache for every subsequent request. Invalidate by
+// deleting rows (no sourceHash: exercise content changes should be
+// accompanied by a manual re-translation since instructors author in
+// English).
+model ExerciseTranslation {
+  exerciseId           String
+  lang                 String   // "en" | "es"
+  title                String
+  instructorPromptText String
+  createdAt            DateTime @default(now())
+
+  exercise             Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@id([exerciseId, lang])
+}
+
+model Session {
+  id            String   @id @default(cuid())
+  studentId     String   // free-form string for MVP; no auth
+  exerciseId    String
+  exercise      Exercise @relation(fields: [exerciseId], references: [id])
+  startedAt     DateTime @default(now())
+  lastActiveAt  DateTime @default(now())
+  completedAt   DateTime?
+  currentPhase  Int      // 1 (spec), 2 (writing), 3 (review), or 4 (closed)
+
+  phase1Data    Json     // Phase1Data
+  phase2Data    Json     // Phase2Data (starts empty)
+  phase3Data    Json?    // Phase3Data
+  liveSummaries Json     // LiveSummary[] (append-only)
+
+  events        SessionEvent[]
+
+  @@index([exerciseId])
+  @@index([completedAt])
+  @@index([lastActiveAt])
+}
+
+model SessionEvent {
+  id        String   @id @default(cuid())
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id])
+  kind      String   // "phase_transition" | "alignment_failure" | "help_request" | "revision" | "summary_refresh"
+  payload   Json
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([sessionId, createdAt])
+}

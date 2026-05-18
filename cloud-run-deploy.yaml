@@ -1,0 +1,58 @@
+# Google Cloud Run deployment configuration
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: maieutic
+  namespace: default
+spec:
+  template:
+    metadata:
+      annotations:
+        # 允许无认证访问 (可选，推荐在实际生产中添加认证)
+        autoscaling.knative.dev/maxScale: "100"
+        autoscaling.knative.dev/minScale: "1"
+    spec:
+      containers:
+        - image: gcr.io/${PROJECT_ID}/maieutic:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: NEXT_TELEMETRY_DISABLED
+              value: "1"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: maieutic-secrets
+                  key: database-url
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: maieutic-secrets
+                  key: gemini-api-key
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "1000m"
+            limits:
+              memory: "1Gi"
+              cpu: "2000m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 40
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+      serviceAccountName: maieutic-sa
+  traffic:
+    - percent: 100
+      latestRevision: true
