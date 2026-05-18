@@ -12,7 +12,8 @@
     "nce:ingest": "tsx scripts/nce-ingest.ts",
     "skeleton:extract": "tsx scripts/extract-skeletons.ts",
     "remix:seed": "tsx scripts/seed-remix-exercises.ts",
-    "remix:smoke": "tsx scripts/smoke-remix.ts"
+    "remix:smoke": "tsx scripts/smoke-remix.ts",
+    "reset-demo": "tsx scripts/reset-demo.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

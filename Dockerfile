@@ -21,8 +21,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install runtime dependencies for process management and Java execution.
-RUN apk add --no-cache dumb-init openjdk17-jdk
+# Install runtime dependencies for process management.
+RUN apk add --no-cache dumb-init
 
 # Copy package files
 COPY package*.json ./
