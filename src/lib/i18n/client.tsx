@@ -3,13 +3,14 @@
 import * as React from "react";
 import { en, type Dict } from "./en";
 import { es } from "./es";
+import { zh } from "./zh";
 import type { Lang } from "./dict";
 
 // The client provider only receives the selected `lang` from the server;
 // the dictionaries themselves are imported here (client-side) because they
 // contain helper functions (pluralizers) that cannot cross the
 // server→client props boundary.
-const DICTS: Record<Lang, Dict> = { en, es };
+const DICTS: Record<Lang, Dict> = { en, es, zh };
 
 type Ctx = { lang: Lang; t: Dict };
 

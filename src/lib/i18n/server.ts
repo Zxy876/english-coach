@@ -3,8 +3,9 @@ import { cookies } from "next/headers";
 import { DEFAULT_LANG, LANG_COOKIE, isLang, type Lang } from "./dict";
 import { en, type Dict } from "./en";
 import { es } from "./es";
+import { zh } from "./zh";
 
-const DICTS: Record<Lang, Dict> = { en, es };
+const DICTS: Record<Lang, Dict> = { en, es, zh };
 
 export async function getLang(): Promise<Lang> {
   const store = await cookies();
