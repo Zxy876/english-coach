@@ -22,14 +22,14 @@ async function main() {
       orderBy: [{ bookKey: "asc" }, { ordinal: "asc" }],
     });
 
-    for (const lesson of lessons) {
+    for (const lesson of lessons as Array<typeof lessons[number] & { remixExercises: unknown[]; skeleton: { plotNodes: unknown; vocabBand: string } | null }>) {
       if (lesson.remixExercises.length > 0 && !force) {
         skipped++;
         continue;
       }
 
       const plotNodes = (lesson.skeleton!.plotNodes as unknown as SkeletonPlotNode[]) ?? [];
-      const lockedIds = plotNodes.filter((n) => n.required).map((n) => n.id);
+      const lockedIds = plotNodes.filter((n: SkeletonPlotNode) => n.required).map((n: SkeletonPlotNode) => n.id);
 
       const exercise = await prisma.remixExercise.create({
         data: {

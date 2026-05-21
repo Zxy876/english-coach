@@ -170,7 +170,7 @@ async function ingestBook(
     await prisma.$transaction([
       prisma.nceSentence.deleteMany({ where: { lessonId: lesson.id } }),
       prisma.nceSentence.createMany({
-        data: sentences.map((s, i) => ({
+        data: sentences.map((s: { startMs: number; english: string; chinese: string }, i: number) => ({
           lessonId: lesson.id,
           ordinal: i + 1,
           startMs: s.startMs,

@@ -11,7 +11,7 @@
 //   tsx scripts/extract-skeletons.ts --force                  # re-extract even if present
 //   tsx scripts/extract-skeletons.ts --lesson=<lessonId>      # single lesson by id
 
-import { PrismaClient, type NceLesson, type NceSentence } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { callOpusAndParse } from "../src/lib/opus/client";
 import { GEMINI_DEFAULT_MODEL } from "../src/lib/opus/providers/gemini";
 import {
@@ -38,19 +38,24 @@ function parseArgs(argv: string[]): Args {
   return out;
 }
 
+type NceLesson = Awaited<ReturnType<PrismaClient['nceLesson']['findFirst']>>;
+type NceSentence = Awaited<ReturnType<PrismaClient['nceSentence']['findFirst']>>;
+
 async function extractOne(
   prisma: PrismaClient,
   lesson: NceLesson & { sentences: NceSentence[] },
 ): Promise<"ok" | "skipped" | "failed"> {
-  const sentences = lesson.sentences.map((s) => ({
-    ordinal: s.ordinal,
-    english: s.english,
-    chinese: s.chinese,
-  }));
+  const sentences = (lesson.sentences as NceSentence[])
+    .filter((s) => s !== null)
+    .map((s) => ({
+      ordinal: s!.ordinal,
+      english: s!.english,
+      chinese: s!.chinese,
+    }));
 
   // Drop the first sentence if it is just "Lesson N" — pure metadata
   // that adds noise to the skeleton.
-  const cleaned = sentences.filter(
+  const cleaned = (sentences as any[]).filter(
     (s) => !/^lesson\s+\d+/i.test(s.english.trim()),
   );
 

@@ -69,13 +69,13 @@ export default async function Page(
         initialDraft={session.draftData}
         initialAlign={session.alignData}
         initialDrift={session.driftData}
-        sentences={session.exercise.lesson.sentences.map((s) => ({
+        sentences={session.exercise.lesson.sentences.map((s: { id: string; ordinal: number; english: string; chinese: string }) => ({
           id: s.id,
           ordinal: s.ordinal,
           english: s.english,
           chinese: s.chinese,
         }))}
-        initialAuxEvents={session.events.map((e) => ({
+        initialAuxEvents={session.events.map((e: { id: string; createdAt: Date; payload: unknown }) => ({
           id: e.id,
           createdAt: e.createdAt.toISOString(),
           payload: e.payload as Record<string, unknown>,

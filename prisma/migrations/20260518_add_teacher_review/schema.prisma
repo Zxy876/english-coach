@@ -1,0 +1,24 @@
+// 教师点评/批改能力
+model Review {
+  id         String   @id @default(cuid())
+  sessionId  String
+  session    Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score      Int?
+  comment    String?
+  tags       String?  // 逗号分隔标签
+  createdAt  DateTime @default(now())
+}
+
+model RemixReview {
+  id              String   @id @default(cuid())
+  remixSessionId  String
+  remixSession    RemixSession @relation(fields: [remixSessionId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score           Int?
+  comment         String?
+  tags            String?
+  createdAt       DateTime @default(now())
+}

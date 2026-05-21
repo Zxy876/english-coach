@@ -209,7 +209,7 @@ async function main() {
     });
     console.log("\n=== Final session ===");
     console.log(`phase=${final!.currentPhase} completedAt=${final!.completedAt?.toISOString()}`);
-    console.log(`events: ${final!.events.map((e) => e.kind).join(" → ")}`);
+    console.log(`events: ${final!.events.map((e: { kind: string }) => e.kind).join(" → ")}`);
     console.log("OK");
   } finally {
     await prisma.$disconnect();

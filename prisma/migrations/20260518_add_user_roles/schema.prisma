@@ -1,0 +1,26 @@
+// 权限体系升级：新增 User 表，Session/RemixSession 关联 userId
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  role      String   // "student" | "teacher" | "admin"
+  createdAt DateTime @default(now())
+  sessions  Session[]
+  remixSessions RemixSession[]
+}
+
+// Session 增加 userId
+model Session {
+  // ...existing code...
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  // ...existing code...
+}
+
+// RemixSession 增加 userId
+model RemixSession {
+  // ...existing code...
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  // ...existing code...
+}

@@ -50,6 +50,11 @@ export function AuxDrawer(props: {
   const [events, setEvents] = useState<AuxEvent[]>(props.initialEvents);
   const lastAttemptRef = useRef<Record<string, number>>({});
 
+  // 健壮性防御：sentences 为空或 activeIdx 越界直接兜底
+  if (!props.sentences || props.sentences.length === 0 || activeIdx >= props.sentences.length) {
+    return <div className="text-red-400 text-xs">No sentences available for this session.</div>;
+  }
+
   const active = props.sentences[activeIdx];
 
   const ttsAvailable = useMemo(

@@ -1,0 +1,67 @@
+// NCE 四册全量内容导入脚本（自动拉取远程 book.json + lrc）
+import fs from "fs";
+import path from "path";
+import fetch from "node-fetch";
+import { prisma } from "@/lib/db";
+
+const BOOKS = [
+  { key: "NCE1", path: "https://nce.mleo.site/NCE1" },
+  { key: "NCE2", path: "https://nce.mleo.site/NCE2" },
+  { key: "NCE3", path: "https://nce.mleo.site/NCE3" },
+  { key: "NCE4", path: "https://nce.mleo.site/NCE4" },
+];
+
+async function importAll() {
+  for (const book of BOOKS) {
+    // 1. 拉取 book.json
+    const bookJsonUrl = `${book.path}/book.json`;
+    const bookJson = await (await fetch(bookJsonUrl)).json();
+    await prisma.nceBook.upsert({
+      where: { key: book.key },
+      update: { title: bookJson.bookName, bookPath: book.path, bookLevel: bookJson.bookLevel, bookCover: bookJson.bookCover },
+      create: { key: book.key, title: bookJson.bookName, bookPath: book.path, bookLevel: bookJson.bookLevel, bookCover: bookJson.bookCover },
+    });
+    for (const [i, unit] of bookJson.units.entries()) {
+      // 2. 导入 lesson 元数据
+      const lesson = await prisma.nceLesson.upsert({
+        where: { bookKey_ordinal: { bookKey: book.key, ordinal: i + 1 } },
+        update: { title: unit.title, filename: unit.filename, audioUrl: `${book.path}/${unit.filename}.mp3`, lrcUrl: `${book.path}/${unit.filename}.lrc` },
+        create: {
+          bookKey: book.key,
+          ordinal: i + 1,
+          title: unit.title,
+          filename: unit.filename,
+          audioUrl: `${book.path}/${unit.filename}.mp3`,
+          lrcUrl: `${book.path}/${unit.filename}.lrc`,
+        },
+      });
+      // 3. 拉取 lrc 文件，导入句子
+      try {
+        const lrcUrl = `${book.path}/${unit.filename}.lrc`;
+        const lrcText = await (await fetch(lrcUrl)).text();
+        const lines = lrcText.split(/\r?\n/).filter(Boolean);
+        for (const line of lines) {
+          const match = line.match(/^\[(\d+),(\d+)\](.*?)\|(.*)$/);
+          if (!match) continue;
+          const [_, startMs, endMs, english, chinese] = match;
+          await prisma.nceSentence.upsert({
+            where: { lessonId_ordinal: { lessonId: lesson.id, ordinal: Number(startMs) } },
+            update: { startMs: Number(startMs), english, chinese },
+            create: {
+              lessonId: lesson.id,
+              ordinal: Number(startMs),
+              startMs: Number(startMs),
+              english,
+              chinese,
+            },
+          });
+        }
+      } catch (e) {
+        console.warn(`LRC not found for ${unit.filename}`);
+      }
+    }
+    console.log(`Imported ${book.key}`);
+  }
+}
+
+importAll().then(() => process.exit(0));

@@ -46,7 +46,7 @@ export default async function LessonsPage() {
         </p>
       </header>
       <div className="space-y-8">
-        {books.map((book) => (
+        {books.map((book: any) => (
           <section key={book.key}>
             <h2 className="text-base font-mono text-[#cccccc] mb-2">
               {book.key} &middot; {book.title}
@@ -57,7 +57,7 @@ export default async function LessonsPage() {
               )}
             </h2>
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-              {book.lessons.map((lesson) => (
+              {book.lessons.map((lesson: any) => (
                 <li key={lesson.id}>
                   <Link
                     href={`/lessons/${encodeURIComponent(book.key)}/${lesson.ordinal}`}

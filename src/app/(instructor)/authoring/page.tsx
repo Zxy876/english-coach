@@ -11,8 +11,8 @@ export default async function Page() {
   });
 
   const options = lessons
-    .filter((l) => l.skeleton !== null)
-    .map((l) => ({
+    .filter((l: { skeleton: unknown }) => l.skeleton !== null)
+    .map((l: { id: string; bookKey: string; ordinal: number; title: string }) => ({
       id: l.id,
       label: `${l.bookKey} L${l.ordinal} — ${l.title}`,
     }));

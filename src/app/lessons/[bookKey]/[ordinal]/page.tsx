@@ -21,7 +21,7 @@ export default async function Page(
   });
   if (!lesson) notFound();
 
-  const playerSentences: PlayerSentence[] = lesson.sentences.map((s) => ({
+  const playerSentences: PlayerSentence[] = lesson.sentences.map((s: { id: string; ordinal: number; startMs: number; english: string; chinese: string }) => ({
     id: s.id,
     ordinal: s.ordinal,
     startMs: s.startMs,

@@ -43,6 +43,16 @@ export const PlotNodeSchema = z.object({
   label: z.string().min(1), // human-readable
   required: z.boolean(), // hard vs soft constraint for remix
   description: z.string().min(1),
+  type: z.enum([
+    "locked_literal",
+    "locked_semantic",
+    "expandable_trait",
+    "optional_detail",
+    "style_anchor",
+  ]).default("locked_literal"),
+  strictness: z.number().min(0).max(1).default(1),
+  semanticTags: z.array(z.string()).optional(),
+  supports: z.array(z.string()).optional(),
 });
 export type SkeletonPlotNode = z.infer<typeof PlotNodeSchema>;
 

@@ -103,7 +103,7 @@ export default async function Page(
 
           <Card title="Events">
             <ul className="text-[11px] space-y-0.5 font-mono">
-              {session.events.map((e) => (
+              {session.events.map((e: { id: string; createdAt: Date; kind: string }) => (
                 <li key={e.id} className="text-[#858585]">
                   {e.createdAt.toISOString()} · <span className="text-[#cccccc]">{e.kind}</span>
                 </li>

@@ -59,9 +59,9 @@ async function main() {
     );
   }
 
-  const plotNodes = exercise.lesson.skeleton.plotNodes as unknown as PlotNode[];
-  const requiredIds = plotNodes.filter((n) => n.required).map((n) => n.id);
-  const allIds = plotNodes.map((n) => n.id);
+  const plotNodes = exercise.lesson.skeleton.plotNodes as PlotNode[];
+  const requiredIds = plotNodes.filter((n: PlotNode) => n.required).map((n: PlotNode) => n.id);
+  const allIds = plotNodes.map((n: PlotNode) => n.id);
   console.log(
     `[reset-demo] using exercise "${exercise.title}" ` +
       `(lesson ${exercise.lesson.bookKey} L${exercise.lesson.ordinal}, ` +

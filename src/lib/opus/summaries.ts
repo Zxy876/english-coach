@@ -85,7 +85,7 @@ export async function refreshSummaryForSession(
           phase1,
           phase2,
           divergences: phase3,
-          recentEvents: session.events.map((e) => ({
+          recentEvents: session.events.map((e: { kind: string; createdAt: Date; payload: unknown }) => ({
             kind: e.kind as SessionEventKind,
             createdAt: e.createdAt,
             payload: e.payload,

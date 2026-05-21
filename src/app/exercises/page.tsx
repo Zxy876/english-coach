@@ -30,13 +30,13 @@ export default async function Page() {
         </p>
       ) : (
         <ul className="space-y-2">
-          {exercises.map((ex) => (
+          {exercises.map((ex: any) => (
             <li
               key={ex.id}
               className="rounded border border-[#3c3c3c] p-3 flex items-center justify-between gap-3"
             >
               <div>
-                <div className="text-sm">{ex.title}</div>
+                <div className="text-sm">{ex.title} <span className="font-mono text-[#888]">[{ex.lesson?.bookKey}]</span></div>
                 <div className="text-xs text-[#858585] font-mono mt-0.5">
                   band cap: {ex.vocabBandCap ?? "—"} ·{" "}
                   {(ex.lockedNodeIds as string[]).length} locked nodes

@@ -2,7 +2,11 @@
 // payload shapes in one place so server-side route handlers and React
 // pages agree on names.
 
-import type { LessonSkeleton, NceLesson, RemixExercise, RemixSession } from "@prisma/client";
+
+type LessonSkeleton = any;
+type NceLesson = any;
+type RemixExercise = any;
+type RemixSession = any;
 
 export interface RemixPlan {
   newScene: string;

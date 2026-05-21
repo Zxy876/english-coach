@@ -162,7 +162,7 @@ export async function summarizeAllExercises(): Promise<ExerciseSummary[]> {
     const sessions = await prisma.session.findMany({
       where: { exerciseId: ex.id },
     });
-    const completed = sessions.filter((s) => s.completedAt !== null);
+    const completed = sessions.filter((s: { completedAt: Date | null; phase1Data?: unknown }) => s.completedAt !== null);
 
     const iterations: number[] = [];
     const divergenceCounts = { drift: 0, revision: 0, bug: 0 };

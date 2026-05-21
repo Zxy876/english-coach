@@ -2,7 +2,12 @@
 // and provides a tiny in-memory cache so we only re-prompt when the
 // session has changed since the last summary.
 
-import type { RemixEvent, RemixSession, RemixExercise, NceLesson, LessonSkeleton } from "@prisma/client";
+
+type RemixEvent = any;
+type RemixSession = any;
+type RemixExercise = any;
+type NceLesson = any;
+type LessonSkeleton = any;
 import { callOpusAndParse } from "@/lib/opus/client";
 import {
   REMIX_LIVE_SUMMARY_SYSTEM,
@@ -87,7 +92,7 @@ export function buildSummaryContext(session: SessionForSummary): RemixLiveSummar
     draftSummary,
     alignSummary,
     driftSummary,
-    recentEvents: session.events.slice(0, 8).map((e) => ({
+    recentEvents: session.events.slice(0, 8).map((e: { kind: string; createdAt: Date; payload: unknown }) => ({
       kind: e.kind,
       createdAt: e.createdAt.toISOString(),
       payload: e.payload,

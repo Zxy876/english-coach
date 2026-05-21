@@ -12,7 +12,7 @@ import { inferTargetLanguage } from "@/lib/target-language";
 // Prisma's `InputJsonValue` requires a recursive index signature that
 // Zod-inferred object literals don't structurally satisfy. Since everything
 // we pass through here is already Zod-validated pure JSON, launder the type.
-const asJson = <T>(v: T) => v as unknown as Prisma.InputJsonValue;
+const asJson = <T>(v: T) => v as unknown as any;
 import {
   Divergence,
   ExerciseAuthoringInput,

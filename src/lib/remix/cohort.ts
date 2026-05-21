@@ -24,7 +24,7 @@ export async function buildCohortDigest(exerciseId: string): Promise<RemixCohort
   const requiredNodeIds = new Set(nodes.filter((n) => n.required).map((n) => n.id));
 
   const sessions = exercise.sessions;
-  const completed = sessions.filter((s) => s.completedAt !== null);
+  const completed = sessions.filter((s: { completedAt: Date | null }) => s.completedAt !== null);
 
   let coverageSum = 0;
   let coverageN = 0;
@@ -74,7 +74,7 @@ export async function buildCohortDigest(exerciseId: string): Promise<RemixCohort
   const averagePhaseReached =
     sessions.length === 0
       ? 0
-      : sessions.reduce((sum, s) => sum + (s.completedAt ? 4 : s.currentPhase), 0) / sessions.length;
+      : sessions.reduce((sum: number, s: { completedAt: Date | null; currentPhase: number }) => sum + (s.completedAt ? 4 : s.currentPhase), 0) / sessions.length;
 
   return {
     exerciseTitle: exercise.title,
@@ -119,7 +119,7 @@ export async function listCohortCards(): Promise<CohortCard[]> {
     orderBy: [{ lesson: { bookKey: "asc" } }, { lesson: { ordinal: "asc" } }],
   });
 
-  return exercises.map((ex) => {
+  return exercises.map((ex: { id: string; title: string; lesson: { bookKey: string; book: { key: string; title: string }; ordinal: number; title: string }; sessions: Array<{ completedAt: Date | null; driftData?: unknown }> }) => {
     const sessions = ex.sessions;
     const completed = sessions.filter((s) => s.completedAt !== null).length;
     const driftHist = new Map<string, number>();
