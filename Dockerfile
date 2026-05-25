@@ -14,9 +14,8 @@ ENV DATABASE_URL="file:/app/prisma/dev.db"
 # Install dependencies
 RUN npm ci
 
-# Copy source code and database
+# Copy source code
 COPY . .
-COPY prisma/dev.db ./prisma/dev.db
 
 # Build Next.js application
 RUN npm run build
@@ -27,7 +26,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Install runtime dependencies for process management.
-RUN apk add --no-cache dumb-init
+RUN apk add --no-cache dumb-init curl
 
 # Copy package files
 COPY package*.json ./
@@ -46,9 +45,6 @@ RUN npm ci
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 
-# Copy database from builder
-COPY --from=builder /app/prisma/dev.db ./prisma/dev.db
-
 # Set environment variables for runtime
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -63,5 +59,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 # Use dumb-init to handle signals
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 
-# Ensure DB schema is ready before booting Next.js
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+# Download database on start, then run
+CMD ["sh", "-c", "curl -L https://github.com/Zxy876/english-coach/releases/download/db-backup-20260525/dev.db.backup.gz | gunzip -c > /app/prisma/dev.db && npx prisma generate && npm start"]
