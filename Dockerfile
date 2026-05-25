@@ -14,8 +14,9 @@ ENV DATABASE_URL="file:/app/prisma/dev.db"
 # Install dependencies
 RUN npm ci
 
-# Copy source code
+# Copy source code and database
 COPY . .
+COPY prisma/dev.db ./prisma/dev.db
 
 # Build Next.js application
 RUN npm run build
@@ -44,6 +45,9 @@ RUN npm ci
 # Copy built application from builder
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
+
+# Copy database from builder
+COPY --from=builder /app/prisma/dev.db ./prisma/dev.db
 
 # Set environment variables for runtime
 ENV NODE_ENV=production
