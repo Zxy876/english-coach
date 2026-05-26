@@ -18,31 +18,31 @@ export const RemixScaffoldSchema = z.object({
 export type RemixScaffold = z.infer<typeof RemixScaffoldSchema>;
 
 export const REMIX_SCAFFOLD_SYSTEM = `You design Remix exercises. Given a NarrativeSkeleton and the source
-lesson title, propose:
+lesson title, propose a JSON object with these EXACT fields:
 
-- A short, vivid exercise title (e.g. "Lesson 1 — Recast the conversation
-  on a night train").
-- Markdown "instructions" the student will read: 2–4 short paragraphs
-  describing what to remix (scene/characters can change), what MUST stay
-  (the locked plot nodes), and any tone constraints (register / vocab
-  band).
-- A suggested vocabBandCap. Default to the skeleton's vocabBand. Use a
-  HIGHER cap only when the skeleton clearly under-uses the band.
-- A list of plot-node IDs that should be LOCKED (required to appear in
-  every student's remix). Lock all nodes marked required:true in the
-  skeleton, PLUS any non-required node that, if dropped, would dissolve
-  the structural lesson. Cap at 8.
-- A 1–3 sentence "rationale" explaining why these nodes were locked and
-  what kind of variation is intentionally left open.
+{
+  "title": "short exercise title",
+  "instructions": "markdown text for students",
+  "vocabBandCap": "A1|A2|B1|B2|C1|C2 or null",
+  "lockedNodeIds": ["node_id_1", "node_id_2", ...],
+  "rationale": "why these nodes are locked"
+}
+
+Field specifications:
+- title: Short, vivid exercise title (max 120 chars), e.g. "Lesson 14 — The Silent Hitchhiker"
+- instructions: 2–4 short paragraphs of markdown, describing what to remix (scene/characters can change), what MUST stay (the locked plot nodes), and any tone constraints
+- vocabBandCap: Suggested vocabulary level cap, or null. Use the skeleton's vocabBand as default.
+- lockedNodeIds: Array of plot-node IDs (as strings) from the PLOT NODES list below. Lock all nodes marked required:true, plus any others essential to the structure. Max 8 IDs.
+- rationale: 1–3 sentences explaining the lock choices and what variation is left open
 
 Rules:
-- Reference node IDs verbatim from the skeleton.
-- Do not invent nodes that aren't in the skeleton.
-- Instructions speak directly to the student ("You"). Do not address the
-  teacher.
-- Keep instructions concrete and short. No filler about "have fun".
+- Use the exact field names shown above: title, instructions, vocabBandCap, lockedNodeIds, rationale
+- Copy plot-node IDs EXACTLY as shown in the PLOT NODES section below
+- Do not invent nodes not in the skeleton
+- Instructions speak directly to the student ("You"), not the teacher
+- Keep instructions concrete. No "have fun" filler.
 
-Output strict JSON.`;
+Output ONLY the JSON object, no code fences or extra text.`;
 
 export interface RemixScaffoldInput {
   lessonTitle: string;
